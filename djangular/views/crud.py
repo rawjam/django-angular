@@ -51,7 +51,7 @@ class NgCRUDView(FormView):
 		"""
 		return modelform_factory(self.model_class)
 
-	def build_model_dict(self, obj, relations=None):
+	def build_model_dict(self, obj, relations={}):
 		"""
 		Builds a dictionary with fieldnames and corresponding values
 
@@ -66,6 +66,8 @@ class NgCRUDView(FormView):
 		"""
 		if relations:
 			relations = json.loads(relations)
+		else:
+			relations = {}
 
 		serialized_data = serializers.serialize('json', [obj,], indent=4 if settings.DEBUG else 0,
 			relations=relations, flatten=True)
@@ -138,8 +140,7 @@ class NgCRUDView(FormView):
 		"""
 		obj = self.get_object()
 
-		json_data = json.loads(request.raw_post_data)
-		for key, value in json_data.iteritems():
+		for key, value in request.GET.iteritems():
 			if hasattr(obj, key) and value != '':
 				setattr(obj, key, value)
 
