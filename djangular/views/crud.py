@@ -8,7 +8,9 @@ from django.forms.models import modelform_factory
 from django.http import HttpResponse
 from django.views.generic import FormView
 from django.conf import settings
+from django.db.models import ForeignKey, DateTimeField
 
+import dateutil.parser as dateparser
 
 class NgCRUDView(FormView):
 	"""
@@ -141,16 +143,29 @@ class NgCRUDView(FormView):
 		updating M2M relationships prefix the field name with either m2m-add- or m2m-remove-
 		"""
 		obj = self.get_object()
+		GET = request.GET.copy()
+		relations = GET.get('relations', None)
+		GET.pop('relations')
 
 		# Handle the standard field updates on this model
-		for key, value in request.GET.iteritems():
+		field_changed = False
+		for key, value in GET.iteritems():
 			if not key.startswith("m2m-"):
+				field_object, model, direct, m2m = obj._meta.get_field_by_name(key)
+				if isinstance(field_object, ForeignKey):
+					key = "%s_id" % key
+				elif isinstance(field_object, DateTimeField):
+					value = dateparser.parse(value, dayfirst=True)
+
 				if hasattr(obj, key) and value != '':
 					setattr(obj, key, value)
-		obj.save(request=request)
+					field_changed = True
+
+		if field_changed:
+			obj.save(request=request)
 
 		# Now that we've saved the model, lets process any m2m updates
-		for key, value in request.GET.iteritems():
+		"""for key, value in GET.iteritems():
 			if key.startswith("m2m-add"):
 				update_type = "m2m-add"
 			elif key.startswith("m2m-delete"):
@@ -163,9 +178,9 @@ class NgCRUDView(FormView):
 				if m2m and update_type == "m2m-add":
 					m2m.add(value)
 				elif m2m and update_type == "m2m-delete":
-					m2m.remove(value)
+					m2m.remove(value)"""
 
-		return self.build_json_response(self.build_model_dict(obj))
+		return self.build_json_response(self.build_model_dict(obj, relations)[0])
 
 	def ng_delete(self, request, *args, **kwargs):
 		"""
