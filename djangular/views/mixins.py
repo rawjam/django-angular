@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
+from django.conf import settings
+from django.core import serializers
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse, HttpResponseBadRequest
 
@@ -19,6 +21,31 @@ class JSONResponseMixin(object):
     A mixin that dispatches POST requests containing the keyword 'action' onto
     the method with that name. It renders the returned context as JSON response.
     """
+    content_type = 'application/json'
+
+    def build_model_dict(self, obj, relations={}, fields=[]):
+        """
+        Builds a dictionary with fieldnames and corresponding values
+
+        If relations is passed, it will fetch a larger json tree. e.g:
+        relations={
+            'owner': {'fields':('first_name', 'last_name', 'email')},
+            'milestones': {},
+            'posts': {},
+            'members': {},
+            'milestone_groups': {},
+        }
+        """
+        if relations: relations = json.loads(relations)
+        else: relations = {}
+
+        if fields: fields = list(fields)
+        else: fields = []
+
+        serialized_data = serializers.serialize('json', [obj,], indent=4 if settings.DEBUG else 0,
+            relations=relations, fields=fields, flatten=True)
+
+        return json.loads(serialized_data)
 
     def dispatch(self, *args, **kwargs):
         return super(JSONResponseMixin, self).dispatch(*args, **kwargs)
@@ -53,6 +80,7 @@ class JSONResponseMixin(object):
     def _dispatch_super(self, request, *args, **kwargs):
         base = super(JSONResponseMixin, self)
         handler = getattr(base, request.method.lower(), None)
+        print handler
         if callable(handler):
             return handler(request, *args, **kwargs)
         raise ValueError('This view can not handle method %s' % request.method)

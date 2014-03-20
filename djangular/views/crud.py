@@ -8,7 +8,7 @@ from django.forms.models import modelform_factory
 from django.http import HttpResponse
 from django.views.generic import FormView
 from django.conf import settings
-from django.db.models import ForeignKey, DateTimeField
+from django.db.models import ForeignKey, DateTimeField, DateField, BooleanField
 
 import dateutil.parser as dateparser
 
@@ -22,6 +22,8 @@ class NgCRUDView(FormView):
 	model_class = None
 	content_type = 'application/json'
 	model_pk = None
+	create_form_class = None
+	update_form_class = None
 
 	def dispatch(self, request, *args, **kwargs):
 		"""
@@ -95,12 +97,12 @@ class NgCRUDView(FormView):
 			return self.model_class.objects.get(pk=self.model_pk)
 		raise ValueError("Attempted to get an object by 'pk', but no 'pk' is present. Missing GET parameter?")
 
-	def get_query(self):
+	def get_query(self, **query_attrs):
 		"""
 		Get query to use in ng_query
 		Allows for easier overriding
 		"""
-		return self.model_class.objects.all()
+		return self.model_class.objects.filter(**query_attrs)
 
 	def ng_query(self, request, *args, **kwargs):
 		"""
@@ -108,7 +110,8 @@ class NgCRUDView(FormView):
 		Build an array of all objects, return json response
 		"""
 		objects = []
-		for obj in self.get_query():
+		query_attrs = dict([(param, val) for param, val in request.GET.iteritems() if val])
+		for obj in self.get_query(**query_attrs):
 			objects.append(self.build_model_dict(obj))
 		return self.build_json_response(objects)
 
@@ -126,7 +129,10 @@ class NgCRUDView(FormView):
 		Called on $save()
 		Use modelform to save new object or modify an existing one
 		"""
-		form = self.get_form(self.get_form_class())
+		if self.create_form_class:
+			form = self.get_form(self.create_form_class)
+		else:
+			form = self.get_form(self.get_form_class())
 		if form.is_valid():
 			obj = form.save()
 			return self.build_json_response(self.build_model_dict(obj))
@@ -156,8 +162,12 @@ class NgCRUDView(FormView):
 					key = "%s_id" % key
 				elif isinstance(field_object, DateTimeField):
 					value = dateparser.parse(value, dayfirst=True)
+				elif isinstance(field_object, DateField):
+					value = dateparser.parse(value, dayfirst=True)
+				elif isinstance(field_object, BooleanField):
+					value = value in ['true', '1', 't', 'y', 'yes']
 
-				if hasattr(obj, key) and value != '':
+				if hasattr(obj, key):
 					setattr(obj, key, value)
 					field_changed = True
 
