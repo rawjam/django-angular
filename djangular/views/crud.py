@@ -87,7 +87,13 @@ class NgCRUDView(FormView):
 		kwargs = super(NgCRUDView, self).get_form_kwargs()
 		# Since angular sends data in JSON rather than as POST parameters, the default data (request.POST)
 		# is replaced with request.body that contains JSON encoded data
-		kwargs['data'] = json.loads(self.request.body)
+		if self.request.POST or self.request.FILES:
+			pass
+		else:
+			kwargs['data'] = json.loads(self.request.body)
+
+		kwargs['request'] = self.request
+
 		if self.model_pk:
 			kwargs['instance'] = self.get_object()
 		return kwargs
