@@ -55,7 +55,7 @@ class NgCRUDView(FormView):
 		"""
 		return modelform_factory(self.model_class)
 
-	def build_model_dict(self, obj, relations={}):
+	def build_model_dict(self, obj, relations={}, extras=[]):
 		"""
 		Builds a dictionary with fieldnames and corresponding values
 
@@ -68,13 +68,13 @@ class NgCRUDView(FormView):
 			'milestone_groups': {},
 		}
 		"""
-		if relations:
-			relations = json.loads(relations)
-		else:
-			relations = {}
+		if relations: relations = json.loads(relations)
+		else: relations = {}
+		if extras: extras = extras.split(',')
+		else: extras = []
 
 		serialized_data = serializers.serialize('json', [obj,], indent=4 if settings.DEBUG else 0,
-			relations=relations, flatten=True)
+			relations=relations, extras=extras, flatten=True)
 
 		return json.loads(serialized_data)
 
@@ -116,9 +116,16 @@ class NgCRUDView(FormView):
 		Build an array of all objects, return json response
 		"""
 		objects = []
-		query_attrs = dict([(param, val) for param, val in request.GET.iteritems() if val])
+		GET = request.GET.copy()
+		relations = GET.get('relations', None)
+		extras = GET.get('extras', None)
+
+		if relations: GET.pop('relations')
+		if extras: GET.pop('extras')
+
+		query_attrs = dict([(param, val) for param, val in GET.iteritems() if val])
 		for obj in self.get_query(**query_attrs):
-			objects.append(self.build_model_dict(obj))
+			objects.append(self.build_model_dict(obj, relations, extras))
 		return self.build_json_response(objects)
 
 	def ng_get(self, request, *args, **kwargs):
@@ -135,13 +142,16 @@ class NgCRUDView(FormView):
 		Called on $save()
 		Use modelform to save new object or modify an existing one
 		"""
+		relations = request.GET.get('relations', None)
+		extras = request.GET.get('extras', None)
+
 		if self.create_form_class:
 			form = self.get_form(self.create_form_class)
 		else:
 			form = self.get_form(self.get_form_class())
 		if form.is_valid():
 			obj = form.save()
-			return self.build_json_response(self.build_model_dict(obj))
+			return self.build_json_response(self.build_model_dict(obj, relations=relations, extras=extras))
 		else:
 			print form.errors
 		raise ValidationError("Form not valid", form.errors)
