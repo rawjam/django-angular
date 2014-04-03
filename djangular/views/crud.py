@@ -179,7 +179,7 @@ class NgCRUDView(FormView):
 				elif isinstance(field_object, DateTimeField):
 					value = dateparser.parse(value, dayfirst=True)
 				elif isinstance(field_object, DateField):
-					value = dateparser.parse(value, dayfirst=True)
+					value = dateparser.parse(value, dayfirst=True).date()
 				elif isinstance(field_object, BooleanField):
 					value = value in ['true', '1', 't', 'y', 'yes']
 
@@ -191,7 +191,7 @@ class NgCRUDView(FormView):
 			obj.save(request=request)
 
 		# Now that we've saved the model, lets process any m2m updates
-		"""for key, value in GET.iteritems():
+		for key, value in GET.iteritems():
 			if key.startswith("m2m-add"):
 				update_type = "m2m-add"
 			elif key.startswith("m2m-delete"):
@@ -204,7 +204,7 @@ class NgCRUDView(FormView):
 				if m2m and update_type == "m2m-add":
 					m2m.add(value)
 				elif m2m and update_type == "m2m-delete":
-					m2m.remove(value)"""
+					m2m.remove(value)
 
 		return self.build_json_response(self.build_model_dict(obj, relations)[0])
 
