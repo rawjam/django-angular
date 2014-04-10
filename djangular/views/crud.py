@@ -22,6 +22,7 @@ class NgCRUDView(FormView):
 	model_class = None
 	content_type = 'application/json'
 	model_pk = None
+	model_slug = None
 	create_form_class = None
 	update_form_class = None
 
@@ -35,8 +36,10 @@ class NgCRUDView(FormView):
 		"""
 		if 'pk' in kwargs:
 			self.model_pk = kwargs['pk']
+		if 'slug' in kwargs:
+			self.model_slug = kwargs['slug']
 		if request.method == 'GET':
-			if self.model_pk:
+			if self.model_pk or self.model_slug:
 				return self.ng_get(request, *args, **kwargs)
 			return self.ng_query(request, *args, **kwargs)
 		elif request.method == 'POST':
@@ -101,6 +104,8 @@ class NgCRUDView(FormView):
 	def get_object(self):
 		if self.model_pk:
 			return self.model_class.objects.get(pk=self.model_pk)
+		elif self.model_slug:
+			return self.model_class.objects.get(slug=self.model_slug)
 		raise ValueError("Attempted to get an object by 'pk', but no 'pk' is present. Missing GET parameter?")
 
 	def get_query(self, **query_attrs):
