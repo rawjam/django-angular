@@ -139,7 +139,8 @@ class NgCRUDView(FormView):
 		Returns a JSON response of a single object dictionary
 		"""
 		relations = request.GET.get('relations', None)
-		data = self.build_model_dict(self.get_object(), relations)[0]
+		extras = request.GET.get('extras', None)
+		data = self.build_model_dict(self.get_object(), relations, extras=extras)[0]
 		return self.build_json_response(data)
 
 	def ng_save(self, request, *args, **kwargs):
