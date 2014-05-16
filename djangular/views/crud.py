@@ -220,4 +220,5 @@ class NgCRUDView(FormView):
 		"""
 		obj = self.get_object()
 		obj.delete()
-		return self.build_json_response(self.build_model_dict(obj))
+		#return self.build_json_response(self.build_model_dict(obj))
+		return self.build_json_response({})
