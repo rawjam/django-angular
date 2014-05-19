@@ -183,9 +183,15 @@ class NgCRUDView(FormView):
 				if isinstance(field_object, ForeignKey):
 					key = "%s_id" % key
 				elif isinstance(field_object, DateTimeField):
-					value = dateparser.parse(value, dayfirst=True)
+					if value == '0' or value == 0:
+						value = None
+					else:
+						value = dateparser.parse(value, dayfirst=True)
 				elif isinstance(field_object, DateField):
-					value = dateparser.parse(value, dayfirst=True).date()
+					if value == '0' or value == 0:
+						value = None
+					else:
+						value = dateparser.parse(value, dayfirst=True).date()
 				elif isinstance(field_object, BooleanField):
 					value = value in ['true', '1', 't', 'y', 'yes']
 
