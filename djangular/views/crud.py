@@ -156,7 +156,8 @@ class NgCRUDView(FormView):
 		else:
 			form = self.get_form(self.get_form_class())
 		if form.is_valid():
-			obj = form.save()
+			obj = form.save(commit=False)
+			obj.save(request=request)
 			return self.build_json_response(self.build_model_dict(obj, relations=relations, extras=extras))
 		else:
 			print form.errors
