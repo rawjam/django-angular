@@ -24,7 +24,7 @@ Configuration
 -------------
 Subclass ``NgCRUDView`` and override model_class attribute::
 
-  from djangular.views.crud import NgCRUDView
+  from apps.api.crud import NgCRUDView
 
   class MyCRUDiew(NgCRUDView):
       model_class = MyModel
